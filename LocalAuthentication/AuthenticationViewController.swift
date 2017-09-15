@@ -21,25 +21,34 @@ class AuthenticationViewController: UIViewController {
     
     @IBOutlet weak var tryAgainButton: UIButton!
     
+    @IBOutlet var authenticationUIElements: [UIView]!
+    
+    enum AuthenticationRenderState {
+        case initial
+        case strongestAvaiableMethod
+        case userIDPassword
+        case success
+        case failed(withError: Error, andCompletion: ((Bool) -> Void)?)
+    }
+    
+    enum AuthenticationError: Error, CustomStringConvertible {
+        case unknownError
+        
+        var description: String { return "" }
+    }
+
     let validPassword = "password"
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        authenticationStatus.isHidden = true
-        tryAgainButton.isHidden = true
-        
-        doSetVisibilityOfUIDPasswordAuthenticationElements(isHidden: true)
-
+        doRender(state: .initial)
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        doAuthenticateViaStrongesAvailableMethod()
+        doRender(state: .strongestAvaiableMethod)
     }
     
     @IBAction func authenticationButtonPressed(_ sender: Any) {
-        doSetVisibilityOfUIDPasswordAuthenticationElements(isHidden: true)
-        
         guard let enteredPassword = passwordTextField.text else { return }
         
         passwordTextField.resignFirstResponder()
@@ -47,20 +56,96 @@ class AuthenticationViewController: UIViewController {
         passwordTextField.text = ""
         
         if enteredPassword.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == validPassword {
-            doRenderSuccessfulAuthentication()
+            doRender(state: .success)
         }
         else {
-            doRenderFailedAuthentication()
+            doRender(state: .failed(withError: AuthenticationError.unknownError, andCompletion: nil))
         }
     }
     
     @IBAction func tryAgainButtonPressed(_ sender: Any) {
-        tryAgainButton.isHidden = true
-        doAuthenticateViaStrongesAvailableMethod()
+        doRender(state: .strongestAvaiableMethod)
     }
     
-    private func doRenderSuccessfulAuthentication() {
+
+    private func handleBiometricsAuthenticationResult(for authVC: AuthenticationViewController,
+                                                      successIndicator isSuccess: Bool,
+                                                      withError evaluationError: Error?) {
         
+        if isSuccess {
+            doRender(state: .success)
+        } else {
+            doRender(state: .failed(withError: evaluationError ?? AuthenticationError.unknownError,
+                andCompletion: nil))
+        }
+    }
+    
+    
+    private func doRender(state: AuthenticationRenderState) {
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let strongSelf = self else { return }
+
+            strongSelf.authenticationUIElements.forEach {
+                $0.isHidden = true
+            }
+            
+            switch state {
+            
+            case .initial:
+                return
+            
+            case .strongestAvaiableMethod:
+                strongSelf.doRenderStrongestAvaiableMethodState()
+            
+            case .userIDPassword:
+                strongSelf.doRenderUserIDPasswordState()
+                
+            case .success:
+                strongSelf.doRenderSuccessState()
+            
+            case .failed(let error, let completion):
+                strongSelf.doRenderFailedState(with: error, andCompletion: completion)
+            }
+        }
+    }
+    
+    
+    func doRenderStrongestAvaiableMethodState() {
+        let myContext = LAContext()
+        let myLocalizedReasonString = "Authenticate to login to your account."
+        
+        var authError: NSError?
+        
+        if #available(iOS 8.0, *) {
+            if myContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) {
+                myContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: myLocalizedReasonString) {
+                    [weak self] (isSuccess,error) -> Void in
+                    guard let strongSelf = self else { return }
+                    
+                    strongSelf.handleBiometricsAuthenticationResult(for: strongSelf,successIndicator: isSuccess,withError: error)
+                }
+            } else {
+                // Could not evaluate policy; look at authError and present an appropriate message to user
+                doRender(state: .failed(withError: authError ?? AuthenticationError.unknownError,
+                                        andCompletion: nil))
+            }
+        } else {
+            // Fallback on UID/PWD
+            doRender(state: .userIDPassword)
+        }
+    }
+
+    
+    func doRenderUserIDPasswordState() {
+        doAnimate({
+            [weak self] in
+            guard let strongSelf = self else { return }
+            strongSelf.doMakeVisibileUIDPasswordAuthenticationElements()
+        })
+    }
+    
+    func doRenderSuccessState() {
         let animations = { [weak self] () -> Void in
             guard let strongSelf = self else { return }
             
@@ -77,117 +162,70 @@ class AuthenticationViewController: UIViewController {
             strongSelf.performSegue(withIdentifier: "AuthToMain", sender: self)
         }
         
-        doAnimateAuthenticationResult(animations, completion: completion)
+        doAnimate(animations, withCompletion: completion)
     }
+    
+    func doRenderFailedState(with error: Error, andCompletion completion: ((Bool) -> Void)?) {
+        print(error)
+        
+        let errorMessage = (error as NSError).prettifiedDescription
 
-    private func doRenderFailedAuthentication() {
+        let errorDomain = (error as NSError).domain
 
-        let animations = { [weak self] () -> Void in
-            guard let strongSelf = self else { return }
-            
-            strongSelf.authenticationStatus.textColor = UIColor.red
-            strongSelf.authenticationStatus.text = "Authentication Attempt Failed!"
-            strongSelf.authenticationStatus.isHidden = false
+        authenticationStatus.textColor = UIColor.red
+        authenticationStatus.text = "Authentication Failure!\n\(errorMessage)"
+        authenticationStatus.isHidden = false
+
+        guard errorDomain != "com.apple.LocalAuthentication" else {
+            doFadeOut(view: authenticationStatus, withCompletion: {[weak self] _ in
+                self?.doRender(state: .userIDPassword)
+            })
+            return
         }
         
-        let completion: (Bool) -> Void = { [weak self] (Bool) -> Void in
+        let defaultCompletion: (Bool) -> Void = { [weak self] (Bool) -> Void in
             guard let strongSelf = self else { return }
             
             strongSelf.authenticationStatus.isHidden = true
             strongSelf.tryAgainButton.isHidden = false
         }
-
         
-        doAnimateAuthenticationResult(animations, completion: completion)
+        doFadeOut(view: authenticationStatus, withCompletion: completion ?? defaultCompletion)
     }
     
-    private func doAnimateAuthenticationResult(_ animations: @escaping () -> Void, completion: ((Bool) -> Void)? = nil) {
-        UIView.animate(withDuration: 3.0, delay: 0.0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseInOut, animations: animations, completion: completion)
-    }
-
-    private func doAuthenticateViaStrongesAvailableMethod() {
-        let myContext = LAContext()
-        let myLocalizedReasonString = "Authenticate to login to your account."
-        
-        var authError: NSError?
-        
-        if #available(iOS 8.0, *) {
-            if myContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) {
-                myContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: myLocalizedReasonString) {
-                    [weak self] (isSuccess,error) -> Void in
-                    guard let strongSelf = self else { return }
-                    
-                    strongSelf.handleBiometricsAuthenticationResult(for: strongSelf,successIndicator: isSuccess,withError: error)
-                }
-            } else {
-                // Could not evaluate policy; look at authError and present an appropriate message to user
-                doRenderAuthorizationError(error: authError)
-            }
-        } else {
-            // Fallback on UID/PWD
-            doAnimateAuthenticationResult({[weak self] in
-                guard let strongSelf = self else { return }
-                strongSelf.doSetVisibilityOfUIDPasswordAuthenticationElements(isHidden: false)
-            })
-        }
+    private func doMakeVisibileUIDPasswordAuthenticationElements() {
+        usernameTextField.isHidden = false
+        passwordTextField.isHidden = false
+        authenticationButton.isHidden = false
     }
     
-
-    private func handleBiometricsAuthenticationResult(for authVC: AuthenticationViewController,
-                                                      successIndicator isSuccess: Bool,
-                                                      withError evaluateError: Error?) {
-        
-        if isSuccess {
-            DispatchQueue.main.async { [weak authVC] in
-                guard let strongAuthVC = authVC else { return }
-                strongAuthVC.doRenderSuccessfulAuthentication()
-            }
-        } else {
-            if (evaluateError as NSError?)?.code == -2 {
-                DispatchQueue.main.async { [weak authVC] in
-                    authVC?.doAnimateAuthenticationResult({ [weak self] in
-                        guard let strongSelf = self else { return }
-                        strongSelf.doSetVisibilityOfUIDPasswordAuthenticationElements(isHidden: false)
-                    })
-                }
-            }
-            else {
-                DispatchQueue.main.async { [weak authVC] in
-                    guard let strongAuthVC = authVC else { return }
-                    strongAuthVC.doRenderFailedAuthentication()
-                }
-            }
-        }
+    private func doAnimate(_ animations: @escaping () -> Void, withCompletion completion: ((Bool) -> Void)? = nil) {
+        UIView.animate(withDuration: 2.0, delay: 0.0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseInOut, animations: animations, completion: completion)
     }
-    
-    private func doRenderAuthorizationError(error: NSError?) {
-        
-        let errorMessage = error == nil ? "Undefinied error" : "\(error!)"
-        
-        let alertController = UIAlertController(title: "Authentication Error", message: "An authentication error occured: \(errorMessage)", preferredStyle: .alert)
 
-        let OKAction = UIAlertAction(title: "OK", style: .default) {
-            [weak self] (action: UIAlertAction!) in
-            guard let strongSelf = self else { return }
-            
-            strongSelf.doAnimateAuthenticationResult({
-                [weak self] in
-                guard let strongSelf = self else { return }
-                strongSelf.doSetVisibilityOfUIDPasswordAuthenticationElements(isHidden: false)
-            })
-
-        }
+    private func doFadeOut(view uiview: UIView, withCompletion completion: ((Bool) -> Void)?) {
+        uiview.alpha = 1.0
         
-        alertController.addAction(OKAction)
-
-        self.present(alertController, animated: true, completion:nil)
-    }
-    
-    
-    private func doSetVisibilityOfUIDPasswordAuthenticationElements(isHidden: Bool) {
-        usernameTextField.isHidden = isHidden
-        passwordTextField.isHidden = isHidden
-        authenticationButton.isHidden = isHidden
+        UIView.animate(withDuration: 1.0, delay: 4.0, options: .curveEaseOut, animations: {
+            uiview.alpha = 0.0
+        }, completion: {bool in
+            uiview.isHidden = true
+            uiview.alpha = 1.0
+            completion?(bool)
+        })
     }
 }
+
+extension NSError {
+    var prettifiedDescription: String {
+        guard !self.domain.starts(with: "LocalAuthenticationDemo.AuthenticationViewController") else {
+            return ""
+        }
+        
+        return "Error Domain: \(self.domain)\nError Code: \(self.code) \(self.userInfo[NSLocalizedDescriptionKey] ?? String())"
+    }
+}
+
+
+
 
