@@ -11,6 +11,8 @@ import LocalAuthentication
 
 class AuthenticationViewController: UIViewController {
 
+    @IBOutlet weak var welcomeLabel: UILabel!
+    
     @IBOutlet weak var usernameTextField: UITextField!
     
     @IBOutlet weak var passwordTextField: UITextField!
@@ -40,11 +42,11 @@ class AuthenticationViewController: UIViewController {
     let validPassword = "password"
     
     override func viewDidLoad() {
-        super.viewDidLoad()
+        super.viewDidLoad()        
         doRender(state: .initial)
     }
     
-    override func viewDidAppear(_ animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         doRender(state: .strongestAvaiableMethod)
     }
     
@@ -83,29 +85,37 @@ class AuthenticationViewController: UIViewController {
     
     private func doRender(state: AuthenticationRenderState) {
         
-        DispatchQueue.main.async { [weak self] in
+        let renderActivites: () -> Void = { [weak self] in
             guard let strongSelf = self else { return }
-
+            
             strongSelf.authenticationUIElements.forEach {
                 $0.isHidden = true
             }
             
             switch state {
-            
+                
             case .initial:
                 return
-            
+                
             case .strongestAvaiableMethod:
                 strongSelf.doRenderStrongestAvaiableMethodState()
-            
+                
             case .userIDPassword:
                 strongSelf.doRenderUserIDPasswordState()
                 
             case .success:
                 strongSelf.doRenderSuccessState()
-            
+                
             case .failed(let error, let completion):
                 strongSelf.doRenderFailedState(with: error, andCompletion: completion)
+            }
+        }
+        
+        if Thread.isMainThread {
+           renderActivites()
+        } else {
+             DispatchQueue.main.async {
+                renderActivites()
             }
         }
     }

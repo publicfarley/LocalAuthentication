@@ -18,42 +18,42 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Welcome" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZsH-pi-rP1">
+                                <rect key="frame" x="0.0" y="104" width="71" height="20.333333333333329"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="Hj2-P6-x7A">
-                                <rect key="frame" x="0.0" y="157.66666666666669" width="375" height="260.66666666666663"/>
+                                <rect key="frame" x="0.0" y="178.33333333333331" width="0.0" height="220.33333333333331"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Welcome" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ZsH-pi-rP1">
-                                        <rect key="frame" x="152" y="0.0" width="71" height="20.333333333333343"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                        <nil key="textColor"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Username" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="hG6-ZL-u7d">
-                                        <rect key="frame" x="62.666666666666671" y="40.333333333333343" width="250" height="30"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="0.0" height="30"/>
                                         <nil key="textColor"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                         <textInputTraits key="textInputTraits"/>
                                     </textField>
                                     <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Password" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="VbM-qu-dXp">
-                                        <rect key="frame" x="62.666666666666671" y="90.333333333333343" width="250" height="30"/>
+                                        <rect key="frame" x="0.0" y="50" width="0.0" height="29.999999999999972"/>
                                         <nil key="textColor"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                         <textInputTraits key="textInputTraits" secureTextEntry="YES"/>
                                     </textField>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="3Qa-BH-pE5">
-                                        <rect key="frame" x="93.666666666666686" y="140.33333333333334" width="187.66666666666663" height="30"/>
+                                        <rect key="frame" x="0.0" y="99.999999999999972" width="0.0" height="30"/>
                                         <state key="normal" title="LogIn"/>
                                         <connections>
                                             <action selector="authenticationButtonPressed:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Tnw-lG-wwf"/>
                                         </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" verticalCompressionResistancePriority="1000" text="Authentication Failure" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Sza-y2-6c9">
-                                        <rect key="frame" x="0.0" y="190.33333333333334" width="0.0" height="20.333333333333314"/>
+                                        <rect key="frame" x="0.0" y="149.99999999999997" width="0.0" height="20.333333333333371"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                         <color key="textColor" red="1" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WAR-QF-KvR">
-                                        <rect key="frame" x="155.66666666666666" y="230.66666666666666" width="64" height="29.999999999999972"/>
+                                        <rect key="frame" x="0.0" y="190.33333333333334" width="64" height="30"/>
                                         <state key="normal" title="Try Again"/>
                                         <connections>
                                             <action selector="tryAgainButtonPressed:" destination="BYZ-38-t0r" eventType="touchUpInside" id="WRk-0Y-WeM"/>
@@ -71,7 +71,9 @@
                         <constraints>
                             <constraint firstItem="Hj2-P6-x7A" firstAttribute="width" secondItem="6Tk-OE-BBY" secondAttribute="width" id="VWk-pA-iR0"/>
                             <constraint firstItem="Hj2-P6-x7A" firstAttribute="centerY" secondItem="6Tk-OE-BBY" secondAttribute="centerY" multiplier="0.7" id="f97-E0-bYf"/>
+                            <constraint firstItem="ZsH-pi-rP1" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="kvb-70-Ov8"/>
                             <constraint firstItem="Hj2-P6-x7A" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="zQa-FO-LGE"/>
+                            <constraint firstItem="ZsH-pi-rP1" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="60" id="zfA-PT-xUe"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
@@ -81,6 +83,7 @@
                         <outlet property="passwordTextField" destination="VbM-qu-dXp" id="bfK-qh-jIl"/>
                         <outlet property="tryAgainButton" destination="WAR-QF-KvR" id="Wa4-FW-iuU"/>
                         <outlet property="usernameTextField" destination="hG6-ZL-u7d" id="bjB-kV-MK7"/>
+                        <outlet property="welcomeLabel" destination="ZsH-pi-rP1" id="UBZ-Gw-c10"/>
                         <outletCollection property="authenticationUIElements" destination="VbM-qu-dXp" collectionClass="NSMutableArray" id="3ta-6O-AsB"/>
                         <outletCollection property="authenticationUIElements" destination="Sza-y2-6c9" collectionClass="NSMutableArray" id="Ldg-ox-akh"/>
                         <outletCollection property="authenticationUIElements" destination="3Qa-BH-pE5" collectionClass="NSMutableArray" id="q32-vb-GTR"/>
