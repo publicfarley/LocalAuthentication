@@ -1,0 +1,5 @@
+# specifically ignore xcuserdata in projects
+
+xcuserdata/farley.xcuserdatad/
+
+
