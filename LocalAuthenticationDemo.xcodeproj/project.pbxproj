@@ -49,6 +49,7 @@
 		B4DBFAC91F68C08C00B98ED4 /* LocalAuthenticationDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LocalAuthenticationDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4DBFACD1F68C08C00B98ED4 /* LocalAuthenticationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAuthenticationUITests.swift; sourceTree = "<group>"; };
 		B4DBFACF1F68C08C00B98ED4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B4EDA4E81FA232210008097D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +80,7 @@
 		B4DBFAA11F68C08B00B98ED4 = {
 			isa = PBXGroup;
 			children = (
+				B4EDA4E81FA232210008097D /* README.md */,
 				B4DBFAAC1F68C08B00B98ED4 /* LocalAuthentication */,
 				B4DBFAC11F68C08C00B98ED4 /* LocalAuthenticationTests */,
 				B4DBFACC1F68C08C00B98ED4 /* LocalAuthenticationUITests */,
