@@ -29,8 +29,8 @@ class AuthenticationViewController: UIViewController {
         case initial
         case strongestAvaiableMethod
         case userIDPassword
-        case success
-        case failed(withError: Error, andCompletion: ((Bool) -> Void)?)
+        case successfullyAuthenticated
+        case authenticationFailed(withError: Error, andCompletion: ((Bool) -> Void)?)
     }
     
     enum AuthenticationError: Error, CustomStringConvertible {
@@ -58,10 +58,10 @@ class AuthenticationViewController: UIViewController {
         passwordTextField.text = ""
         
         if enteredPassword.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == validPassword {
-            doRender(state: .success)
+            doRender(state: .successfullyAuthenticated)
         }
         else {
-            doRender(state: .failed(withError: AuthenticationError.unknownError, andCompletion: nil))
+            doRender(state: .authenticationFailed(withError: AuthenticationError.unknownError, andCompletion: nil))
         }
     }
     
@@ -75,9 +75,9 @@ class AuthenticationViewController: UIViewController {
                                                       withError evaluationError: Error?) {
         
         if isSuccess {
-            doRender(state: .success)
+            doRender(state: .successfullyAuthenticated)
         } else {
-            doRender(state: .failed(withError: evaluationError ?? AuthenticationError.unknownError,
+            doRender(state: .authenticationFailed(withError: evaluationError ?? AuthenticationError.unknownError,
                 andCompletion: nil))
         }
     }
@@ -103,18 +103,18 @@ class AuthenticationViewController: UIViewController {
             case .userIDPassword:
                 strongSelf.doRenderUserIDPasswordState()
                 
-            case .success:
-                strongSelf.doRenderSuccessState()
+            case .successfullyAuthenticated:
+                strongSelf.doRenderSuccessfullyAuthenticatedState()
                 
-            case .failed(let error, let completion):
-                strongSelf.doRenderFailedState(with: error, andCompletion: completion)
+            case .authenticationFailed(let error, let completion):
+                strongSelf.doRenderAuthenticationFailedState(with: error, andCompletion: completion)
             }
         }
         
         if Thread.isMainThread {
-           renderActivites()
+            renderActivites()
         } else {
-             DispatchQueue.main.async {
+            DispatchQueue.main.async {
                 renderActivites()
             }
         }
@@ -137,7 +137,7 @@ class AuthenticationViewController: UIViewController {
                 }
             } else {
                 // Could not evaluate policy; look at authError and present an appropriate message to user
-                doRender(state: .failed(withError: authError ?? AuthenticationError.unknownError,
+                doRender(state: .authenticationFailed(withError: authError ?? AuthenticationError.unknownError,
                                         andCompletion: nil))
             }
         } else {
@@ -155,7 +155,7 @@ class AuthenticationViewController: UIViewController {
         })
     }
     
-    func doRenderSuccessState() {
+    func doRenderSuccessfullyAuthenticatedState() {
         let animations = { [weak self] () -> Void in
             guard let strongSelf = self else { return }
             
@@ -175,7 +175,7 @@ class AuthenticationViewController: UIViewController {
         doAnimate(animations, withCompletion: completion)
     }
     
-    func doRenderFailedState(with error: Error, andCompletion completion: ((Bool) -> Void)?) {
+    func doRenderAuthenticationFailedState(with error: Error, andCompletion completion: ((Bool) -> Void)?) {
         print(error)
         
         let errorMessage = (error as NSError).prettifiedDescription
@@ -187,6 +187,12 @@ class AuthenticationViewController: UIViewController {
         authenticationStatus.isHidden = false
 
         guard errorDomain != "com.apple.LocalAuthentication" else {
+            
+            let noIdentitiesEnrolledLocalAuthenticationError = -7
+            if (error as NSError).code == noIdentitiesEnrolledLocalAuthenticationError {
+                authenticationStatus.text = "To use biometric authentication with this app, please enroll an identity in your device settings."
+            }
+            
             doFadeOut(view: authenticationStatus, withCompletion: {[weak self] _ in
                 self?.doRender(state: .userIDPassword)
             })
