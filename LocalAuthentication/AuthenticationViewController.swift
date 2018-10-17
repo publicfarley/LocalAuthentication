@@ -39,15 +39,23 @@ class AuthenticationViewController: UIViewController {
         var description: String { return "" }
     }
 
+    var state: AuthenticationRenderState = .initial {
+        didSet {
+            DispatchQueue.main.async { [weak self] in
+                guard let strongSelf = self else { return }
+                strongSelf.doRender(state: strongSelf.state)
+            }
+        }
+    }
+    
     let validPassword = "password"
     
     override func viewDidLoad() {
         super.viewDidLoad()        
-        doRender(state: .initial)
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        doRender(state: .strongestAvaiableMethod)
+        state = .initial
     }
     
     @IBAction func authenticationButtonPressed(_ sender: Any) {
@@ -57,16 +65,13 @@ class AuthenticationViewController: UIViewController {
         usernameTextField.text = ""
         passwordTextField.text = ""
         
-        if enteredPassword.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == validPassword {
-            doRender(state: .successfullyAuthenticated)
-        }
-        else {
-            doRender(state: .authenticationFailed(withError: AuthenticationError.unknownError, andCompletion: nil))
-        }
+        state = enteredPassword.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == validPassword ?
+            .successfullyAuthenticated :
+            .authenticationFailed(withError: AuthenticationError.unknownError, andCompletion: nil)
     }
     
     @IBAction func tryAgainButtonPressed(_ sender: Any) {
-        doRender(state: .strongestAvaiableMethod)
+        state = .strongestAvaiableMethod
     }
     
 
@@ -74,50 +79,41 @@ class AuthenticationViewController: UIViewController {
                                                       successIndicator isSuccess: Bool,
                                                       withError evaluationError: Error?) {
         
-        if isSuccess {
-            doRender(state: .successfullyAuthenticated)
-        } else {
-            doRender(state: .authenticationFailed(withError: evaluationError ?? AuthenticationError.unknownError,
-                andCompletion: nil))
-        }
+        state = isSuccess ?
+            .successfullyAuthenticated :
+            .authenticationFailed(withError: evaluationError ?? AuthenticationError.unknownError,
+                                                                               andCompletion: nil)
     }
     
     
     private func doRender(state: AuthenticationRenderState) {
         
-        let renderActivites: () -> Void = { [weak self] in
-            guard let strongSelf = self else { return }
-            
-            strongSelf.authenticationUIElements.forEach {
-                $0.isHidden = true
-            }
-            
-            switch state {
-                
-            case .initial:
-                return
-                
-            case .strongestAvaiableMethod:
-                strongSelf.doRenderStrongestAvaiableMethodState()
-                
-            case .userIDPassword:
-                strongSelf.doRenderUserIDPasswordState()
-                
-            case .successfullyAuthenticated:
-                strongSelf.doRenderSuccessfullyAuthenticatedState()
-                
-            case .authenticationFailed(let error, let completion):
-                strongSelf.doRenderAuthenticationFailedState(with: error, andCompletion: completion)
-            }
+        authenticationUIElements.forEach {
+            $0.isHidden = true
         }
         
-        if Thread.isMainThread {
-            renderActivites()
-        } else {
-            DispatchQueue.main.async {
-                renderActivites()
-            }
+        switch state {
+            
+        case .initial:
+            doRenderInitialState()
+            
+        case .strongestAvaiableMethod:
+            doRenderStrongestAvaiableMethodState()
+            
+        case .userIDPassword:
+            doRenderUserIDPasswordState()
+            
+        case .successfullyAuthenticated:
+            doRenderSuccessfullyAuthenticatedState()
+            
+        case .authenticationFailed(let error, let completion):
+            doRenderAuthenticationFailedState(with: error, andCompletion: completion)
         }
+    }
+    
+    func doRenderInitialState() {
+        tryAgainButton.isHidden = false
+        tryAgainButton.setTitle("Press here to authenticate!", for: .normal)
     }
     
     
@@ -133,16 +129,18 @@ class AuthenticationViewController: UIViewController {
                     [weak self] (isSuccess,error) -> Void in
                     guard let strongSelf = self else { return }
                     
-                    strongSelf.handleBiometricsAuthenticationResult(for: strongSelf,successIndicator: isSuccess,withError: error)
+                    DispatchQueue.main.async {
+                        strongSelf.handleBiometricsAuthenticationResult(for: strongSelf,successIndicator: isSuccess,withError: error)
+                    }
                 }
             } else {
                 // Could not evaluate policy; look at authError and present an appropriate message to user
-                doRender(state: .authenticationFailed(withError: authError ?? AuthenticationError.unknownError,
-                                        andCompletion: nil))
+                state = .authenticationFailed(withError: authError ?? AuthenticationError.unknownError,
+                                        andCompletion: nil)
             }
         } else {
             // Fallback on UID/PWD
-            doRender(state: .userIDPassword)
+            state = .userIDPassword
         }
     }
 
@@ -194,7 +192,7 @@ class AuthenticationViewController: UIViewController {
             }
             
             doFadeOut(view: authenticationStatus, withCompletion: {[weak self] _ in
-                self?.doRender(state: .userIDPassword)
+                self?.state = .userIDPassword
             })
             return
         }
