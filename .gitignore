@@ -1,2 +1,8 @@
 LocalAuthenticationDemo.xcodeproj/project.xcworkspace/xcuserdata/
 
+build/
+DerivedData/
+xcuserdata/
+xcshareddata/
+.DS_Store
+
