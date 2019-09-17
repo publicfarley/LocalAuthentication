@@ -75,14 +75,13 @@ class AuthenticationViewController: UIViewController {
     }
     
 
-    private func handleBiometricsAuthenticationResult(for authVC: AuthenticationViewController,
-                                                      successIndicator isSuccess: Bool,
+    private func handleBiometricsAuthenticationResult(successIndicator isSuccess: Bool,
                                                       withError evaluationError: Error?) {
         
         state = isSuccess ?
             .successfullyAuthenticated :
-            .authenticationFailed(withError: evaluationError ?? AuthenticationError.unknownError,
-                                                                               andCompletion: nil)
+            .authenticationFailed(
+                withError: evaluationError ?? AuthenticationError.unknownError, andCompletion: nil)
     }
     
     
@@ -123,24 +122,20 @@ class AuthenticationViewController: UIViewController {
         
         var authError: NSError?
         
-        if #available(iOS 8.0, *) {
-            if myContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) {
-                myContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: myLocalizedReasonString) {
-                    [weak self] (isSuccess,error) -> Void in
-                    guard let strongSelf = self else { return }
-                    
-                    DispatchQueue.main.async {
-                        strongSelf.handleBiometricsAuthenticationResult(for: strongSelf,successIndicator: isSuccess,withError: error)
-                    }
-                }
-            } else {
-                // Could not evaluate policy; look at authError and present an appropriate message to user
-                state = .authenticationFailed(withError: authError ?? AuthenticationError.unknownError,
-                                        andCompletion: nil)
-            }
-        } else {
+        guard #available(iOS 8.0, *) else {
             // Fallback on UID/PWD
             state = .userIDPassword
+            return
+        }
+            
+        if myContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) {
+            myContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: myLocalizedReasonString) { isSuccess,error in
+                    self.handleBiometricsAuthenticationResult(successIndicator: isSuccess, withError: error)
+                }
+        } else {
+            // Could not evaluate policy; look at authError and present an appropriate message to user
+            state = .authenticationFailed(
+                withError: authError ?? AuthenticationError.unknownError, andCompletion: nil)
         }
     }
 
@@ -148,26 +143,25 @@ class AuthenticationViewController: UIViewController {
     func doRenderUserIDPasswordState() {
         doAnimate({
             [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.doMakeVisibileUIDPasswordAuthenticationElements()
+            guard let self = self else { return }
+            self.doMakeVisibileUIDPasswordAuthenticationElements()
         })
     }
     
     func doRenderSuccessfullyAuthenticatedState() {
         let animations = { [weak self] () -> Void in
-            guard let strongSelf = self else { return }
+            guard let self = self else { return }
             
-            strongSelf.authenticationStatus.textColor = UIColor.green
-            strongSelf.authenticationStatus.text = "Successfully Authenticated!"
-            strongSelf.authenticationStatus.isHidden = false
+            self.authenticationStatus.textColor = UIColor.green
+            self.authenticationStatus.text = "Successfully Authenticated!"
+            self.authenticationStatus.isHidden = false
         }
         
         let completion: (Bool) -> Void = { [weak self] (Bool) -> Void in
-            guard let strongSelf = self else { return }
+            guard let self = self else { return }
             
-            strongSelf.authenticationStatus.isHidden = true
-            
-            strongSelf.performSegue(withIdentifier: "AuthToMain", sender: self)
+            self.performSegue(withIdentifier: "AuthToMain", sender: self)
+            self.state = .initial
         }
         
         doAnimate(animations, withCompletion: completion)
@@ -198,10 +192,10 @@ class AuthenticationViewController: UIViewController {
         }
         
         let defaultCompletion: (Bool) -> Void = { [weak self] (Bool) -> Void in
-            guard let strongSelf = self else { return }
+            guard let self = self else { return }
             
-            strongSelf.authenticationStatus.isHidden = true
-            strongSelf.tryAgainButton.isHidden = false
+            self.authenticationStatus.isHidden = true
+            self.tryAgainButton.isHidden = false
         }
         
         doFadeOut(view: authenticationStatus, withCompletion: completion ?? defaultCompletion)
@@ -214,7 +208,14 @@ class AuthenticationViewController: UIViewController {
     }
     
     private func doAnimate(_ animations: @escaping () -> Void, withCompletion completion: ((Bool) -> Void)? = nil) {
-        UIView.animate(withDuration: 2.0, delay: 0.0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseInOut, animations: animations, completion: completion)
+        
+        UIView.animate(withDuration: 2.0,
+                       delay: 0.0,
+                       usingSpringWithDamping: 0.5,
+                       initialSpringVelocity: 0.5,
+                       options: .curveEaseInOut,
+                       animations: animations,
+                       completion: completion)
     }
 
     private func doFadeOut(view uiview: UIView, withCompletion completion: ((Bool) -> Void)?) {
